@@ -7,6 +7,35 @@ from dynamic_network_architectures.building_blocks.helper import get_matching_co
 from dynamic_network_architectures.building_blocks.residual_encoders import ResidualEncoder
 from dynamic_network_architectures.building_blocks.plain_conv_encoder import PlainConvEncoder
 
+class Attention_block(nn.Module):
+    def __init__(self,F_g,F_l,F_int):
+        super(Attention_block,self).__init__()
+        self.W_x = nn.Sequential(
+            nn.Conv3d(F_l, F_int, kernel_size=1,stride=1,padding=0,bias=True),
+            nn.BatchNorm3d(F_int)
+        )
+
+        self.W_g = nn.Sequential(
+            nn.Conv3d(F_g, F_int, kernel_size=1,stride=1,padding=0,bias=True),
+            nn.BatchNorm3d(F_int)
+            )
+
+        self.psi = nn.Sequential(
+            nn.Conv3d(F_int, 1, kernel_size=1,stride=1,padding=0,bias=True),
+            nn.BatchNorm3d(1),
+            nn.Sigmoid()
+        )
+        
+        self.relu = nn.ReLU(inplace=True)
+        
+    def forward(self, gate, skip):
+        gate_1 = self.W_g(gate)
+        skip_1 = self.W_x(skip)
+        psi = self.relu(gate_1 + skip_1)
+        psi = self.psi(psi)
+
+        return skip * psi
+
 
 class UNetDecoder(nn.Module):
     def __init__(self,
@@ -46,10 +75,13 @@ class UNetDecoder(nn.Module):
         stages = []
         transpconvs = []
         seg_layers = []
+        attention_blocks = []
         for s in range(1, n_stages_encoder):
             input_features_below = encoder.output_channels[-s]
             input_features_skip = encoder.output_channels[-(s + 1)]
             stride_for_transpconv = encoder.strides[-s]
+            attention_blocks.append(Attention_block(input_features_skip, input_features_skip, int(input_features_skip/2)))
+
             transpconvs.append(transpconv_op(
                 input_features_below, input_features_skip, stride_for_transpconv, stride_for_transpconv,
                 bias=encoder.conv_bias
@@ -69,6 +101,7 @@ class UNetDecoder(nn.Module):
         self.stages = nn.ModuleList(stages)
         self.transpconvs = nn.ModuleList(transpconvs)
         self.seg_layers = nn.ModuleList(seg_layers)
+        self.attention_blocks = nn.ModuleList(attention_blocks)
 
     def forward(self, skips):
         """
@@ -80,7 +113,8 @@ class UNetDecoder(nn.Module):
         seg_outputs = []
         for s in range(len(self.stages)):
             x = self.transpconvs[s](lres_input)
-            x = torch.cat((x, skips[-(s+2)]), 1)
+            skip = self.attention_blocks[s](x, skips[-(s+2)])
+            x = torch.cat((x, skip), 1)
             x = self.stages[s](x)
             if self.deep_supervision:
                 seg_outputs.append(self.seg_layers[s](x))

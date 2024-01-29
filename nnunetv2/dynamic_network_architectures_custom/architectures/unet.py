@@ -8,7 +8,7 @@ from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.dropout import _DropoutNd
 
 from dynamic_network_architectures.building_blocks.plain_conv_encoder import PlainConvEncoder
-from dynamic_network_architectures.building_blocks.unet_decoder import UNetDecoder
+from dynamic_network_architectures_custom.building_blocks.unet_decoder import UNetDecoder
 from dynamic_network_architectures.building_blocks.helper import convert_conv_op_to_dim
 
 
