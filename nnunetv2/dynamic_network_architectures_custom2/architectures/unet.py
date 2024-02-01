@@ -1,3 +1,13 @@
+import sys
+import os
+
+# Get the parent directory of the current script
+current_script_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_script_directory, os.pardir))
+
+# Append the parent directory to sys.path
+sys.path.append(parent_directory)
+
 from typing import Union, Type, List, Tuple
 
 import torch
@@ -7,9 +17,9 @@ from torch import nn
 from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.dropout import _DropoutNd
 
-from dynamic_network_architectures.building_blocks.plain_conv_encoder import PlainConvEncoder
-from dynamic_network_architectures.building_blocks.unet_decoder import UNetDecoder
-from dynamic_network_architectures.building_blocks.helper import convert_conv_op_to_dim
+from dynamic_network_architectures_custom2.building_blocks.plain_conv_encoder import PlainConvEncoder
+from dynamic_network_architectures_custom2.building_blocks.unet_decoder import UNetDecoder
+from dynamic_network_architectures_custom2.building_blocks.helper import convert_conv_op_to_dim
 
 
 class PlainConvUNet(nn.Module):
@@ -56,6 +66,7 @@ class PlainConvUNet(nn.Module):
                                    nonlin_first=nonlin_first)
 
     def forward(self, x):
+        print("forward pass")
         skips = self.encoder(x)
         return self.decoder(skips)
 

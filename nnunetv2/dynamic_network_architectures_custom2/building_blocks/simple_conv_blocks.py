@@ -6,7 +6,17 @@ from torch import nn
 from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.dropout import _DropoutNd
 
-from dynamic_network_architectures.building_blocks.helper import maybe_convert_scalar_to_list
+import sys
+import os
+
+# Get the parent directory of the current script
+current_script_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_script_directory, os.pardir))
+
+# Append the parent directory to sys.path
+sys.path.append(parent_directory)
+
+from dynamic_network_architectures_custom2.building_blocks.helper import maybe_convert_scalar_to_list
 
 
 class ConvDropoutNormReLU(nn.Module):
@@ -25,6 +35,7 @@ class ConvDropoutNormReLU(nn.Module):
                  nonlin_kwargs: dict = None,
                  nonlin_first: bool = False
                  ):
+        
         super(ConvDropoutNormReLU, self).__init__()
         self.input_channels = input_channels
         self.output_channels = output_channels
@@ -115,6 +126,7 @@ class StackedConvBlocks(nn.Module):
         super().__init__()
         if not isinstance(output_channels, (tuple, list)):
             output_channels = [output_channels] * num_convs
+        print("************************CUSTOM STACKED CONV BLOCK CALLED***************************")
 
         self.convs = nn.Sequential(
             ConvDropoutNormReLU(

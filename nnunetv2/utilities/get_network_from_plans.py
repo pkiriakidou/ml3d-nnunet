@@ -1,6 +1,16 @@
-from dynamic_network_architectures_custom.architectures.unet import PlainConvUNet, ResidualEncoderUNet
-from dynamic_network_architectures_custom.building_blocks.helper import get_matching_instancenorm, convert_dim_to_conv_op
-from dynamic_network_architectures_custom.initialization.weight_init import init_last_bn_before_add_to_0
+import sys
+import os
+
+# Get the parent directory of the current script
+current_script_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_script_directory, os.pardir))
+
+# Append the parent directory to sys.path
+sys.path.append(parent_directory)
+
+from dynamic_network_architectures_custom2.architectures.unet import PlainConvUNet, ResidualEncoderUNet
+from dynamic_network_architectures_custom2.building_blocks.helper import get_matching_instancenorm, convert_dim_to_conv_op
+from dynamic_network_architectures_custom2.initialization.weight_init import init_last_bn_before_add_to_0
 from nnunetv2.utilities.network_initialization import InitWeights_He
 from nnunetv2.utilities.plans_handling.plans_handler import ConfigurationManager, PlansManager
 from torch import nn
