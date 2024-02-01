@@ -66,7 +66,6 @@ class PlainConvUNet(nn.Module):
                                    nonlin_first=nonlin_first)
 
     def forward(self, x):
-        print("forward pass")
         skips = self.encoder(x)
         return self.decoder(skips)
 

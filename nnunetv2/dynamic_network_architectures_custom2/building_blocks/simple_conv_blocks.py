@@ -24,6 +24,7 @@ class ConvDropoutNormReLU(nn.Module):
                  conv_op: Type[_ConvNd],
                  input_channels: int,
                  output_channels: int,
+                 dilation: int,
                  kernel_size: Union[int, List[int], Tuple[int, ...]],
                  stride: Union[int, List[int], Tuple[int, ...]],
                  conv_bias: bool = False,
@@ -50,13 +51,15 @@ class ConvDropoutNormReLU(nn.Module):
 
         ops = []
 
+        print("conv_block called with dilation rate")
+
         self.conv = conv_op(
             input_channels,
             output_channels,
             kernel_size,
             stride,
-            padding=[(i - 1) // 2 for i in kernel_size],
-            dilation=1,
+            padding=[(dilation*(i - 1)) // 2 for i in kernel_size],
+            dilation=dilation,
             bias=conv_bias,
         )
         ops.append(self.conv)
