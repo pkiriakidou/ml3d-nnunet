@@ -85,4 +85,6 @@ def get_network_from_plans(plans_manager: PlansManager,
     model.apply(InitWeights_He(1e-2))
     if network_class == ResidualEncoderUNet:
         model.apply(init_last_bn_before_add_to_0)
+
+    print("model: ", model, type(model))
     return model

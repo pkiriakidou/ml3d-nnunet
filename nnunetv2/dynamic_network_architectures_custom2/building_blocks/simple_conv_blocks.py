@@ -51,7 +51,7 @@ class ConvDropoutNormReLU(nn.Module):
 
         ops = []
 
-        print("conv_block called with dilation rate")
+        print("conv_block called with dilation rate: ", dilation)
 
         self.conv = conv_op(
             input_channels,
@@ -127,18 +127,22 @@ class StackedConvBlocks(nn.Module):
         :param nonlin_kwargs:
         """
         super().__init__()
+        print("************************CUSTOM STACKED CONV BLOCK CALLED***************************")   
+        num_convs=num_convs*2
+
         if not isinstance(output_channels, (tuple, list)):
             output_channels = [output_channels] * num_convs
-        print("************************CUSTOM STACKED CONV BLOCK CALLED***************************")
 
+        dilation=3
+            
         self.convs = nn.Sequential(
             ConvDropoutNormReLU(
-                conv_op, input_channels, output_channels[0], kernel_size, initial_stride, conv_bias, norm_op,
+                conv_op, input_channels, output_channels[0], dilation, kernel_size, initial_stride, conv_bias, norm_op,
                 norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first
             ),
             *[
                 ConvDropoutNormReLU(
-                    conv_op, output_channels[i - 1], output_channels[i], kernel_size, 1, conv_bias, norm_op,
+                    conv_op, output_channels[i - 1], output_channels[i], dilation*(i+1), kernel_size, 1, conv_bias, norm_op,
                     norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first
                 )
                 for i in range(1, num_convs)
