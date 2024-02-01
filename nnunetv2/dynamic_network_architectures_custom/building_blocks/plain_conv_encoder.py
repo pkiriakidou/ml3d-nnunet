@@ -5,7 +5,7 @@ from typing import Union, Type, List, Tuple
 
 from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.dropout import _DropoutNd
-from dynamic_network_architectures.building_blocks.simple_conv_blocks import StackedConvBlocks
+from dynamic_network_architectures_custom.building_blocks.simple_conv_blocks import StackedConvBlocks
 from dynamic_network_architectures.building_blocks.helper import maybe_convert_scalar_to_list, get_matching_pool_op
 
 
@@ -59,7 +59,7 @@ class PlainConvEncoder(nn.Module):
                 raise RuntimeError()
             stage_modules.append(StackedConvBlocks(
                 n_conv_per_stage[s], conv_op, input_channels, features_per_stage[s], kernel_sizes[s], conv_stride,
-                conv_bias, norm_op, norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first
+                conv_bias, norm_op, norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first, s, n_stages -1
             ))
             stages.append(nn.Sequential(*stage_modules))
             input_channels = features_per_stage[s]

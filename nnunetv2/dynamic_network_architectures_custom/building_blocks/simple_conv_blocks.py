@@ -2,6 +2,7 @@ from typing import Tuple, List, Union, Type
 
 import numpy as np
 import torch.nn
+import math
 from torch import nn
 from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.dropout import _DropoutNd
@@ -23,7 +24,8 @@ class ConvDropoutNormReLU(nn.Module):
                  dropout_op_kwargs: dict = None,
                  nonlin: Union[None, Type[torch.nn.Module]] = None,
                  nonlin_kwargs: dict = None,
-                 nonlin_first: bool = False
+                 nonlin_first: bool = False,
+                 stage_progress: float = 1.0
                  ):
         super(ConvDropoutNormReLU, self).__init__()
         self.input_channels = input_channels
@@ -38,14 +40,15 @@ class ConvDropoutNormReLU(nn.Module):
             nonlin_kwargs = {}
 
         ops = []
-
+        dilation_calc = math.ceil((lambda x: 15 - 17.5 * x if 0 <= x <= 0.8 else 1)(stage_progress))
+        print("stage_progress", stage_progress, "dilation_calc", dilation_calc)
         self.conv = conv_op(
             input_channels,
             output_channels,
             kernel_size,
             stride,
-            padding=[(i - 1) // 2 for i in kernel_size],
-            dilation=1,
+            padding=[dilation_calc * (i - 1) // 2 for i in kernel_size],
+            dilation= dilation_calc,
             bias=conv_bias,
         )
         ops.append(self.conv)
@@ -93,7 +96,9 @@ class StackedConvBlocks(nn.Module):
                  dropout_op_kwargs: dict = None,
                  nonlin: Union[None, Type[torch.nn.Module]] = None,
                  nonlin_kwargs: dict = None,
-                 nonlin_first: bool = False
+                 nonlin_first: bool = False,
+                 stage: int = 1,
+                 n_stages: int = 1
                  ):
         """
 
@@ -119,12 +124,12 @@ class StackedConvBlocks(nn.Module):
         self.convs = nn.Sequential(
             ConvDropoutNormReLU(
                 conv_op, input_channels, output_channels[0], kernel_size, initial_stride, conv_bias, norm_op,
-                norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first
+                norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first, stage/n_stages
             ),
             *[
                 ConvDropoutNormReLU(
                     conv_op, output_channels[i - 1], output_channels[i], kernel_size, 1, conv_bias, norm_op,
-                    norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first
+                    norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first, stage/n_stages
                 )
                 for i in range(1, num_convs)
             ]
