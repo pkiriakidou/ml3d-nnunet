@@ -41,7 +41,6 @@ class ConvDropoutNormReLU(nn.Module):
 
         ops = []
         dilation_calc = math.ceil((lambda x: 15 - 17.5 * x if 0 <= x <= 0.8 else 1)(stage_progress))
-        print("stage_progress", stage_progress, "dilation_calc", dilation_calc)
         self.conv = conv_op(
             input_channels,
             output_channels,
