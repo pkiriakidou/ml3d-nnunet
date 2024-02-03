@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from torch import nn
+import torch.nn.functional as F
 from typing import Union, List, Tuple
 from dynamic_network_architectures.building_blocks.simple_conv_blocks import StackedConvBlocks
 from dynamic_network_architectures.building_blocks.helper import get_matching_convtransp
@@ -46,30 +47,15 @@ class UNetDecoder(nn.Module):
         stages = []
         transpconvs = []
         seg_layers = []
-        transform_skips = []
         conv_skips = []
-        transform_decoders = []
-        conv_decoders = []
         for s in range(1, n_stages_encoder):
             input_features = []
-            transform_skips_s = []
             conv_skips_s = []
-            transform_decoders_s = []
-            conv_decoders_s = []
             for s_skips in range(s, n_stages_encoder + 1): 
                 input_features.append(encoder.output_channels[-s_skips])
                 if (s_skips >= s+1):
-                    transform_skips_s.append(nn.MaxPool3d(1, stride=1)) #Dummy MaxPool3d, redefined later
                     conv_skips_s.append(nn.Conv3d(in_channels = encoder.output_channels[-s_skips], out_channels =  encoder.output_channels[-(s+1)], kernel_size = 3, padding = 1, stride=1))
-            transform_skips.append(nn.ModuleList(transform_skips_s))
             conv_skips.append(nn.ModuleList(conv_skips_s))
-
-            for s_dec in range(1, s):
-                transform_decoders_s.append(nn.Upsample(scale_factor = 1)) #Dummy Upsample, redefined later
-                conv_decoders_s.append(nn.Conv3d(in_channels = encoder.output_channels[-s_dec], out_channels =  encoder.output_channels[-(s+1)], kernel_size = 3, padding = 1, stride=1))
-                
-            transform_decoders.append(nn.ModuleList(transform_decoders_s))
-            conv_decoders.append(nn.ModuleList(conv_decoders_s))
 
             
             input_features_below = input_features[0]
@@ -82,7 +68,7 @@ class UNetDecoder(nn.Module):
             ))
             # input features to conv is 2x input_features_skip (concat input_features_skip with transpconv output)
             stages.append(StackedConvBlocks(
-                n_conv_per_stage[s-1], encoder.conv_op, n_stages_encoder * input_features_skip, input_features_skip, 
+                n_conv_per_stage[s-1], encoder.conv_op, (n_stages_encoder - s + 1)* input_features_skip, input_features_skip, 
                 encoder.kernel_sizes[-(s + 1)], 1, encoder.conv_bias, encoder.norm_op, encoder.norm_op_kwargs,
                 encoder.dropout_op, encoder.dropout_op_kwargs, encoder.nonlin, encoder.nonlin_kwargs, nonlin_first
             ))
@@ -91,13 +77,10 @@ class UNetDecoder(nn.Module):
             # then a model trained with deep_supervision=True could not easily be loaded at inference time where
             # deep supervision is not needed. It's just a convenience thing
             seg_layers.append(encoder.conv_op(input_features_skip, num_classes, 1, 1, 0, bias=True))
-        self.transform_skips = nn.ModuleList(transform_skips)
         self.conv_skips = nn.ModuleList(conv_skips)
         self.stages = nn.ModuleList(stages)
         self.transpconvs = nn.ModuleList(transpconvs)
         self.seg_layers = nn.ModuleList(seg_layers)
-        self.transform_decoders = nn.ModuleList(transform_decoders)
-        self.conv_decoders = nn.ModuleList(conv_decoders)
 
     def forward(self, skips):
         """
@@ -107,29 +90,17 @@ class UNetDecoder(nn.Module):
         """
         lres_input = skips[-1]
         seg_outputs = []
-        decoder_layers = []
-        decoder_layers.append(lres_input)
         for s in range(len(self.stages)):
             x = self.transpconvs[s](lres_input)
             transformed_skips = []
-            transformed_decoders = []
             output_size = np.array(x.size())[2:]
             for s_skips in range(s+2, len(self.stages) + 2):
-                input_size = np.array(skips[-s_skips].size())[2:]
-                self.transform_skips[s][s_skips-2-s] = nn.MaxPool3d(kernel_size = tuple(input_size - output_size + 1), stride = 1) 
-                transformed = self.transform_skips[s][s_skips-2-s](skips[-s_skips])
+                transformed = F.adaptive_max_pool3d(skips[-s_skips], output_size = output_size)
                 transformed_skips.append(self.conv_skips[s][s_skips-2-s](transformed))
 
-            for s_dec in range(1,len(decoder_layers)):
-                self.transform_decoders[s][s_dec-1] = nn.Upsample(size = tuple(output_size))
-                transformed = self.transform_decoders[s][s_dec-1](decoder_layers[s_dec-1]) 
-                transformed_decoders.append(self.conv_decoders[s][s_dec-1](transformed)) 
-
-            x = torch.cat((x, *transformed_skips, *transformed_decoders), 1)
+            x = torch.cat((x, *transformed_skips), 1)
             
-            #x = torch.cat((x, skips[-(s+2)]), 1)
             x = self.stages[s](x)
-            decoder_layers.append(x)
             if self.deep_supervision:
                 seg_outputs.append(self.seg_layers[s](x))
             elif s == (len(self.stages) - 1):
