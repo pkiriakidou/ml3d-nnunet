@@ -1,5 +1,5 @@
 # nnU-Net: a self-configuring method for deep learning-based biomedical image segmentation
-This is the code for the semester project for the course "Machine learning for 3D Geometry" of the Technical University of Munich.
+This is the code of the semester project for the course "Machine learning for 3D Geometry" of the Technical University of Munich.
 
 The main branch contains the base nnU-Net framework. We made 5 modifications and saved each of them in their respective branch.
 
