@@ -51,8 +51,6 @@ class ConvDropoutNormReLU(nn.Module):
 
         ops = []
 
-        print("conv_block called with dilation rate: ", dilation)
-
         self.conv = conv_op(
             input_channels,
             output_channels,
@@ -126,8 +124,7 @@ class StackedConvBlocks(nn.Module):
         :param nonlin:
         :param nonlin_kwargs:
         """
-        super().__init__()
-        print("************************CUSTOM STACKED CONV BLOCK CALLED***************************")   
+        super().__init__()  
         num_convs=num_convs*2
 
         if not isinstance(output_channels, (tuple, list)):
