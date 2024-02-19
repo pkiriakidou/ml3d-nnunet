@@ -10,7 +10,7 @@ The main branch contains the base nnU-Net framework. We made 5 modifications and
 | stacked_dilated_convolutions      | Added in each level of the Vanilla U-Net stacked dilated convolutions while mantaining the dynamic network creation.      |  
 | decreasingly_dilated_convolutions      | Added in each encoder level of the Vanilla U-Net decreasingly dilated convolutions while mantaining the dynamic network creation.      |  
 | nnunet_3plus | Transformed the Vanilla U-Net into an U-Net 3+ while mantaining the dynamic network creation.      |  
-| model_quantization |       |  
+| model_quantization |Techniques to reduce model footprint.|  
 
 Please refer to the original [nnU-Net](https://github.com/MIC-DKFZ/nnUNet) repository for the installation guide.
 
