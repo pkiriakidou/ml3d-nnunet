@@ -68,7 +68,6 @@ def get_network_from_plans(plans_manager: PlansManager,
         'n_conv_per_stage_decoder': configuration_manager.n_conv_per_stage_decoder
     }
     # network class name!!
-    print(" ********************************** CONTROLL **********************************")
     model = network_class(
         input_channels=num_input_channels,
         n_stages=num_stages,
@@ -85,6 +84,4 @@ def get_network_from_plans(plans_manager: PlansManager,
     model.apply(InitWeights_He(1e-2))
     if network_class == ResidualEncoderUNet:
         model.apply(init_last_bn_before_add_to_0)
-
-    print("model: ", model, type(model))
     return model
