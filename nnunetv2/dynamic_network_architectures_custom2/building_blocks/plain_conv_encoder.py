@@ -67,8 +67,6 @@ class PlainConvEncoder(nn.Module):
                 conv_stride = strides[s]
             else:
                 raise RuntimeError()
-            
-            print("input_channels: ", input_channels, "stage: ", s)
 
 
             stage_modules.append(StackedConvBlocks(
