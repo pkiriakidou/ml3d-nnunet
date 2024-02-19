@@ -3,10 +3,20 @@ from torch import nn
 import numpy as np
 from typing import Union, Type, List, Tuple
 
+import sys
+import os
+
+# Get the parent directory of the current script
+current_script_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_script_directory, os.pardir))
+
+# Append the parent directory to sys.path
+sys.path.append(parent_directory)
+
 from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.dropout import _DropoutNd
-from dynamic_network_architectures.building_blocks.simple_conv_blocks import StackedConvBlocks
-from dynamic_network_architectures.building_blocks.helper import maybe_convert_scalar_to_list, get_matching_pool_op
+from dynamic_network_architectures_custom2.building_blocks.simple_conv_blocks import StackedConvBlocks
+from dynamic_network_architectures_custom2.building_blocks.helper import maybe_convert_scalar_to_list, get_matching_pool_op
 
 
 class PlainConvEncoder(nn.Module):
@@ -57,6 +67,10 @@ class PlainConvEncoder(nn.Module):
                 conv_stride = strides[s]
             else:
                 raise RuntimeError()
+            
+            print("input_channels: ", input_channels, "stage: ", s)
+
+
             stage_modules.append(StackedConvBlocks(
                 n_conv_per_stage[s], conv_op, input_channels, features_per_stage[s], kernel_sizes[s], conv_stride,
                 conv_bias, norm_op, norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first

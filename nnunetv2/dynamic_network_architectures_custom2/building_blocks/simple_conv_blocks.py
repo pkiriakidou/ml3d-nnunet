@@ -6,7 +6,17 @@ from torch import nn
 from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.dropout import _DropoutNd
 
-from dynamic_network_architectures.building_blocks.helper import maybe_convert_scalar_to_list
+import sys
+import os
+
+# Get the parent directory of the current script
+current_script_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.abspath(os.path.join(current_script_directory, os.pardir))
+
+# Append the parent directory to sys.path
+sys.path.append(parent_directory)
+
+from dynamic_network_architectures_custom2.building_blocks.helper import maybe_convert_scalar_to_list
 
 
 class ConvDropoutNormReLU(nn.Module):
@@ -14,6 +24,7 @@ class ConvDropoutNormReLU(nn.Module):
                  conv_op: Type[_ConvNd],
                  input_channels: int,
                  output_channels: int,
+                 dilation: int,
                  kernel_size: Union[int, List[int], Tuple[int, ...]],
                  stride: Union[int, List[int], Tuple[int, ...]],
                  conv_bias: bool = False,
@@ -25,6 +36,7 @@ class ConvDropoutNormReLU(nn.Module):
                  nonlin_kwargs: dict = None,
                  nonlin_first: bool = False
                  ):
+        
         super(ConvDropoutNormReLU, self).__init__()
         self.input_channels = input_channels
         self.output_channels = output_channels
@@ -39,13 +51,15 @@ class ConvDropoutNormReLU(nn.Module):
 
         ops = []
 
+        print("conv_block called with dilation rate: ", dilation)
+
         self.conv = conv_op(
             input_channels,
             output_channels,
             kernel_size,
             stride,
-            padding=[(i - 1) // 2 for i in kernel_size],
-            dilation=1,
+            padding=[(dilation*(i - 1)) // 2 for i in kernel_size],
+            dilation=dilation,
             bias=conv_bias,
         )
         ops.append(self.conv)
@@ -113,17 +127,22 @@ class StackedConvBlocks(nn.Module):
         :param nonlin_kwargs:
         """
         super().__init__()
+        print("************************CUSTOM STACKED CONV BLOCK CALLED***************************")   
+        num_convs=num_convs*2
+
         if not isinstance(output_channels, (tuple, list)):
             output_channels = [output_channels] * num_convs
 
+        dilation=3
+            
         self.convs = nn.Sequential(
             ConvDropoutNormReLU(
-                conv_op, input_channels, output_channels[0], kernel_size, initial_stride, conv_bias, norm_op,
+                conv_op, input_channels, output_channels[0], dilation, kernel_size, initial_stride, conv_bias, norm_op,
                 norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first
             ),
             *[
                 ConvDropoutNormReLU(
-                    conv_op, output_channels[i - 1], output_channels[i], kernel_size, 1, conv_bias, norm_op,
+                    conv_op, output_channels[i - 1], output_channels[i], dilation*(i+1), kernel_size, 1, conv_bias, norm_op,
                     norm_op_kwargs, dropout_op, dropout_op_kwargs, nonlin, nonlin_kwargs, nonlin_first
                 )
                 for i in range(1, num_convs)
